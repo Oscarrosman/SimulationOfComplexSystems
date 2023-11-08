@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
-import time
+import copy, time
 
 def Initialization(m, n):
     return np.random.choice([-1, 1], size=(m, n))
 
-def MonteCarloStep(lattice, T):
+def MonteCarloStep(lattice, T, h):
     beta = 1/T # beta = T^-1 according to book
 
     # List of linear indicies
@@ -35,7 +34,7 @@ def MonteCarloStep(lattice, T):
             M += lattice[i][j+1]
 
         # Calculate energy of surroundings
-        energies = [-(H+J*M), H+J*M] # [+, -]
+        energies = [-(h+J*M), h+J*M] # [+, -]
         p = [np.exp(-energies[1]/T), np.exp(-energies[0]/T)]
         probabilities = [p[0]/sum(p), p[1]/sum(p)]
 
@@ -82,13 +81,41 @@ def PlotFunction(data):
     plt.tight_layout()
     plt.show()
 
-def IsingMethod(temp, steps, size):
+def PlotFunctionD(data, H):
+     
+     # Find coefficient X with linear regression
+     coefficients = np.polyfit(H, data, 1)
+     x = coefficients[0]
+     print(f'\nCoefficient (X) approximated to: {x} (m = xH)')
+     
+    # Plot of m as a function of H
+     #plt.plot(H, data, linestyle='-', color='r')
+
+    # Plot of m as a function of H
+     plt.plot(H, data, linestyle='-', color='r', label='Data Points')
+    
+    # Plot the line y = kx with black color
+     plt.plot(H, x * np.array(H), linestyle='-', color='k', label=f'Fit: m = {x:.2f}H')
+     plt.xlabel('External magnetization, H')
+     plt.ylabel('Internal magnetization, m(H)')
+     plt.grid(True)
+     plt.xlim(0, max(H))
+     plt.ylim(0, max(data)+0.25*max(data))
+     plt.legend()
+     plt.show()
+
+def Magnetization(grid):
+    N = len(grid)*len(grid[0])
+    m = (1/(N**2))*sum(sum(grid))
+    return m
+
+def IsingMethodABC(temp, steps, size):
     grids = [Initialization(size, size) for _ in range(len(temp))]
     plotData = [[], [], [], []] 
     st = time.time()
     for step in range(steps):
         for i, t in enumerate(temp):
-            grids[i] = MonteCarloStep(grids[i], t)
+            grids[i] = MonteCarloStep(grids[i], t, H)
 
         if step == 0:
             plotData[0] = copy.deepcopy(grids)
@@ -104,15 +131,43 @@ def IsingMethod(temp, steps, size):
     print(f'\nSimulation time: {(time.time()-st)//60:2.0f} min, {(time.time()-st)%60:2.0f} seconds.\n')
     PlotFunction(plotData)
 
+def IsingMethodD(temp, steps, size, hList):
+    grid = Initialization(size, size)
+    plotData = [] 
+    st = time.time()
 
-# Variables
+    for i,h in enumerate(hList):
+        for step in range(steps):
+            grid = MonteCarloStep(grid, temp, h)
+
+        m = Magnetization(grid)
+        plotData.append(m)
+
+        print(f'{i}) m(H = {h}) = {m}')
+
+    print(f'\nSimulation time: {(time.time()-st)//60:2.0f} min, {(time.time()-st)%60:2.0f} seconds.\n')
+    PlotFunctionD(plotData, hList)
+
+
+# Part A
 H = 0
 J = 1
 kb = 1
 tCrit = 2.269
-temperatures = [0.25*tCrit, tCrit, 2*tCrit]
-temperatures = [tCrit, 5, 10]
+temperatures = [1, 3, 6]
+#IsingMethodABC(temperatures, 10001, 200)
 
-IsingMethod(temperatures, 10001, 200)
+# Part B
+temperatures = [0.25*tCrit, tCrit, 2*tCrit]
+#IsingMethodABC(temperatures, 10001, 200)
+
+# Part C
+temperatures = [tCrit, 5, 10]
+#IsingMethodABC(temperatures, 10001, 200)
+
+# Part D
+H = np.linspace(0, 0.02, num=50)
+IsingMethodD(tCrit, 1000, 200, H)
+
 
 
