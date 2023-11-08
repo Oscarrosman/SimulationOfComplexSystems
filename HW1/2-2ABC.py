@@ -56,7 +56,7 @@ def PlotFunction(data):
         plt.imshow(data[step][0], cmap=cmap, interpolation='nearest')
         plt.title(titles[step])
         if counter == 1:
-            plt.ylabel('T < Tcrit')
+            plt.ylabel('T = Tcrit')
         elif counter == 4:
             plt.colorbar()
     
@@ -65,7 +65,7 @@ def PlotFunction(data):
         plt.subplot(3, 4, counter)
         plt.imshow(data[step][1], cmap=cmap, interpolation='nearest')
         if counter == 5:
-            plt.ylabel('Tcrit')
+            plt.ylabel('T = 5 (>Tcrit)')
         elif counter == 8:
             plt.colorbar()
 
@@ -74,7 +74,7 @@ def PlotFunction(data):
         plt.subplot(3, 4, counter)
         plt.imshow(data[step][2], cmap=cmap, interpolation='nearest')
         if counter == 9:
-            plt.ylabel('T > Tcrit')
+            plt.ylabel('T = 10 (>Tcrit)')
         elif counter == 12:
             plt.colorbar()
 
@@ -111,6 +111,7 @@ J = 1
 kb = 1
 tCrit = 2.269
 temperatures = [0.25*tCrit, tCrit, 2*tCrit]
+temperatures = [tCrit, 5, 10]
 
 IsingMethod(temperatures, 10001, 200)
 
