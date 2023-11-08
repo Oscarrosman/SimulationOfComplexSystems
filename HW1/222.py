@@ -57,6 +57,8 @@ def PlotFunction(data):
         plt.title(titles[step])
         if counter == 1:
             plt.ylabel('T < Tcrit')
+        elif counter == 4:
+            plt.colorbar()
     
     for step in range(len(data)):
         counter += 1
@@ -64,6 +66,8 @@ def PlotFunction(data):
         plt.imshow(data[step][1], cmap=cmap, interpolation='nearest')
         if counter == 5:
             plt.ylabel('Tcrit')
+        elif counter == 8:
+            plt.colorbar()
 
     for step in range(len(data)):
         counter += 1
@@ -71,6 +75,8 @@ def PlotFunction(data):
         plt.imshow(data[step][2], cmap=cmap, interpolation='nearest')
         if counter == 9:
             plt.ylabel('T > Tcrit')
+        elif counter == 12:
+            plt.colorbar()
 
     plt.suptitle('All latices')
     plt.tight_layout()
@@ -95,7 +101,7 @@ def IsingMethod(temp, steps, size):
 
         if step % 500 == 0:
             print(f'Steps taken: {step}, ({100*step/steps:3.1f}%)')
-    print(f'Simulation time: {(time.time()-st)//60}min, {(time.time()-st)%60} seconds.')
+    print(f'\nSimulation time: {(time.time()-st)//60:2.0f} min, {(time.time()-st)%60:2.0f} seconds.\n')
     PlotFunction(plotData)
 
 
@@ -107,16 +113,5 @@ tCrit = 2.269
 temperatures = [0.25*tCrit, tCrit, 2*tCrit]
 
 IsingMethod(temperatures, 10001, 200)
-
-test = np.random.choice([1, 1], size=(20, 20))
-print(test)
-test = MonteCarloStep(test, 0.01*tCrit)
-counter = 0
-for i in range(len(test)):
-    for j in range(len(test[0])):
-        if test[i][j] == -1:
-            counter +=1
-print(f'Number of changes: {counter}')
-print(test)
 
 
