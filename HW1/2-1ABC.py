@@ -119,6 +119,6 @@ for t in T:
         print(f'\n\nSimulation: {genT}.{genEB}')
         print(f' > Eb = {eb/kb}kbT \n > T = {t}')
         print(f'Average escape time: {np.mean(escapeTime)}')
+        print(f'Std of escape time: {np.std(escapeTime)}')
 
 print(f'\nSimulation time: {(time.time()-st)//60:2.0f} min, {(time.time()-st)%60:2.0f} seconds.\n')
-

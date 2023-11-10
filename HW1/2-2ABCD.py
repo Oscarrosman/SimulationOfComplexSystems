@@ -47,7 +47,8 @@ def PlotFunction(data):
     colors = ['red', 'blue']
     cmap = plt.matplotlib.colors.ListedColormap(colors)
     counter = 0
-    titles = ['Steps = 0', 'Steps = 1000', 'Steps = 10,000', 'Steps = 100,000']
+    titles = ['Steps = 0', 'Steps = 100', 'Steps = 500', 'Steps = 1000']
+    print(len(data), len(data[0]), len(data[1]), len(data[2]), len(data[3]))
 
     for step in range(len(data)):
         counter += 1
@@ -119,11 +120,11 @@ def IsingMethodABC(temp, steps, size):
 
         if step == 0:
             plotData[0] = copy.deepcopy(grids)
-        elif step == 1000:
+        if step == 100:
             plotData[1] = copy.deepcopy(grids)
-        elif step == 10000:
+        if step == 500:
             plotData[2] = copy.deepcopy(grids)
-        elif step == 100000:
+        if step == 1000:
             plotData[3] = copy.deepcopy(grids)
 
         if step % 500 == 0:
@@ -159,7 +160,7 @@ temperatures = [1, 3, 6]
 
 # Part B
 temperatures = [0.25*tCrit, tCrit, 2*tCrit]
-IsingMethodABC(temperatures, 100000, 200)
+IsingMethodABC(temperatures, 1001, 200)
 
 # Part C
 temperatures = [tCrit, 5, 10]
