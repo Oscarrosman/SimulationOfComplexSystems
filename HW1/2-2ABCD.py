@@ -48,7 +48,6 @@ def PlotFunction(data):
     cmap = plt.matplotlib.colors.ListedColormap(colors)
     counter = 0
     titles = ['Steps = 0', 'Steps = 100', 'Steps = 500', 'Steps = 1000']
-    print(len(data), len(data[0]), len(data[1]), len(data[2]), len(data[3]))
 
     for step in range(len(data)):
         counter += 1
