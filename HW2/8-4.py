@@ -3,16 +3,16 @@ import csv
 import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi, voronoi_plot_2d
 
-def InitializeParticles(l, v, n):
+def InitializeParticles(l, n):
     positions = l*np.random.rand(n, 2)
-    velocities = v*np.random.rand(n, 2)
-    return positions, velocities
+    theta = 2*np.pi*np.random.rand(n,1)
+    return positions, theta
 
 def SaveData(data, filename):
     with open(filename, 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(data)
-    
+
 def LoadData(filename):
     data = []
     with open(filename, 'r') as file:
@@ -38,49 +38,78 @@ def PlotFunctionA(data):
     ax.set_ylabel('Y: L')
     plt.show()
 
-def FindNeighbors(positions, rf):
+def FindNeighbors(positions, rf, size):
     distances = [[] for _ in range(len(positions))]
     neighbors = [[] for _ in range(len(positions))]
 
+    # In-line functions for different distance functions
+    EuclidianDistance = lambda p1, p2: np.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+    WrappedDistance = lambda p1, p2, l: np.sqrt((l - abs(p1[0] - p2[0]))**2 + (l - abs(p1[1] - p2[1]))**2)
+
+    # Calculate distances to other particles (Euclidian and wrapped)
     for i, x in enumerate(positions):
         for j, y in enumerate(positions):
-            dist = [(x[k] - y[k])**2 for k in range(len(x))]
-            distances[i].append(np.sqrt(sum(dist)))
+            dist = [EuclidianDistance(x, y), WrappedDistance(x, y, size)]
+            distances[i].append(min(dist))
 
+    # Determine if other particles are within radius
     for i in range(len(distances)):
         for j in range(len(distances[0])):
-            if i != j and distances[i][j] < rf:
+            if distances[i][j] < rf:
                 neighbors[i].append(j)
 
     return neighbors
 
-def CalculateFlow(velocities, neighborList):
-    # Find average flow in neighborhoods:
-    for i in range(len(neighborList)):
-        if neighborList[i]:
-            avgV = [0 for _ in range(len(velocities[0]))]
-            temp = [[] for _ in range(len(velocities[0]))]
-            for j in range(len(neighborList[i])):
-                for k in range(len(velocities[0])):
-                    idx = neighborList[i][j]
-                    temp[k].append(velocities[idx][k])
+def OrientationUpdate(angles, neigborhood, eta, dt):
+    for i, neighbors in enumerate(neigborhood):
+        thetas = [angles[a] for _, a in enumerate(neighbors)]
+        avgSin = np.mean([np.sin(thetaK) for thetaK in thetas])
+        avgCos = np.mean([np.cos(thetaK) for thetaK in thetas])
+        avgTheta = np.arctan(avgSin/avgCos)
+        w = np.random.uniform(-1/2, 1/2)
+        angles[i] = avgTheta + eta*w*dt
+    return angles
+
+def UpdatePositions(positions, v, angle, size):
+    for i in range(len(positions)):
+        positions[i][0] += v*np.cos(angle[i])
+        positions[i][1] += v*np.sin(angle[i])
+        
+        # Ensure particle stays within grid (If it moves outside it placed on the other side (Wraparound))
+        if positions[i, 0] > size:
+            positions[i, 0] -= size
+        elif positions[i, 0] < size:
+            positions[i, 0] += size
+        
+        if positions[i, 1] > size:
+            positions[i, 1] -= size
+        elif positions[i, 1] < size:
+            positions[i, 1] += size
+    return positions
+
+def UpdateParticles(positions, angles, rf, l, eta, dt, v):
+    neighbors = FindNeighbors(positions, rf, l)
+    angles = OrientationUpdate(angles, neighbors, eta, dt)
+    positions = UpdatePositions(positions, v, angles, l)
+    return positions, angles
+
+def VicsekModel(gen, v, size, mode='Load'):
+
+    if mode == 'Load':
+        particles = [LoadData('Positions.csv'), LoadData('Angles.csv')]
+    else:
+        particles = InitializeParticles(l, n)
+
+    for i in range(gen):
+        particles = UpdateParticles(particles[0], particles[1], rf, size, eta, dt, v)
+
+        if i % 10 == 0:
+            print(f'Generation: {i}')
+
+    PlotFunctionA(particles[0])
 
 
-    pass
 
-
-
-def VicsekModel(positions, velocities, rf, generations):
-    for _ in range(generations):
-        pass
-
-
-
-
-
-
-
-# Variables
 
 l = 100
 n = 100
@@ -88,12 +117,8 @@ v = 1
 dt = 1
 eta = 0.01
 rf = 1
-gen = 10**4
+gen = 10**2
 
-testP, testV = InitializeParticles(l, v, n)
-SaveData(testP, 'Positions.csv')
-SaveData(testV, 'Velocities.csv')
-testP = LoadData('Positions.csv')
+VicsekModel(gen, v, l)
 
-d = FindNeighbors(testP, rf=1)
-print(d)
+
