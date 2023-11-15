@@ -1,9 +1,8 @@
 import numpy as np
-import csv
+import csv, copy, time
 import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi, voronoi_plot_2d
 from collections import deque
-import copy
 
 def InitializeParticles(l, n):
     positions = l*np.random.rand(n, 2)
@@ -47,7 +46,7 @@ def FindNeighbors(positions, rf, size):
     return neighbors
 
 def OrientationUpdate(angles, neigborhood, eta, dt, history, h):
-    if len(history) < h:
+    if len(history) < h or h == 0:
         for i, neighbors in enumerate(neigborhood):
             thetas = [angles[a] for _, a in enumerate(neighbors)]
             avgSin = np.mean([np.sin(thetaK) for thetaK in thetas])
@@ -73,12 +72,12 @@ def UpdatePositions(positions, v, angle, size):
         # Ensure particle stays within grid (If it moves outside it placed on the other side (Wraparound))
         if positions[i, 0] > size:
             positions[i, 0] -= size
-        elif positions[i, 0] < size:
+        elif positions[i, 0] < 0:
             positions[i, 0] += size
         
         if positions[i, 1] > size:
             positions[i, 1] -= size
-        elif positions[i, 1] < size:
+        elif positions[i, 1] < 0:
             positions[i, 1] += size
     return positions
 
@@ -113,6 +112,7 @@ def FindCoefficients(positions, angles, rf):
     return alignC, clusterC
 
 def PlotFunction(initialPositions, finalPositions, coefficients):
+    print(finalPositions)
     
     fig, axs = plt.subplots(1, 3)
 
@@ -167,13 +167,15 @@ def PlotFunction(initialPositions, finalPositions, coefficients):
 def VicsekModel(gen, v, size, h, mode='Load'):
     alignmentData = []
     clusteringData = []
+    startTime = time.time()
+    periodTime = time.time()
     if h > 0:
         thetaHistory = deque(maxlen=h)
     else:
         thetaHistory = []
 
     if mode == 'Load':
-        particles = [LoadData('Positions.csv'), LoadData('Angles.csv')]
+        particles = [LoadData('Positions8.csv'), LoadData('Angles8.csv')]
     else:
         particles = InitializeParticles(l, n)
         SaveData(particles[0], 'Positions8.csv')
@@ -187,8 +189,11 @@ def VicsekModel(gen, v, size, h, mode='Load'):
         alignmentData.append(alignC)
         clusteringData.append(clusterC)
 
-        if i % 100 == 0:
-            print(f'Generation: {i}')
+        if i % 500 == 0:
+            print(f'\nGeneration: {i} \n  > Periodtime: {time.time()-periodTime: 3.0f} seconds')
+            periodTime = time.time()
+    
+    print(f'\n Simulation time: {(time.time()-startTime)%60} minutes')
 
     PlotFunction(LoadData('Positions8.csv'), particles[0], [alignmentData, clusteringData])
 
@@ -201,6 +206,6 @@ dt = 1
 eta = 0.2
 rf = 20
 gen = 10**4
-h = 8
+h = 2
 
 VicsekModel(gen, v, l, h)
