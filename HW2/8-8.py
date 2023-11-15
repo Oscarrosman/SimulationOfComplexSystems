@@ -2,7 +2,8 @@ import numpy as np
 import csv
 import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi, voronoi_plot_2d
-import time
+from collections import deque
+import copy
 
 def InitializeParticles(l, n):
     positions = l*np.random.rand(n, 2)
@@ -45,14 +46,23 @@ def FindNeighbors(positions, rf, size):
 
     return neighbors
 
-def OrientationUpdate(angles, neigborhood, eta, dt):
-    for i, neighbors in enumerate(neigborhood):
-        thetas = [angles[a] for _, a in enumerate(neighbors)]
-        avgSin = np.mean([np.sin(thetaK) for thetaK in thetas])
-        avgCos = np.mean([np.cos(thetaK) for thetaK in thetas])
-        avgTheta = np.arctan(avgSin/avgCos)
-        w = np.random.uniform(-1/2, 1/2)
-        angles[i] = avgTheta + eta*w*dt
+def OrientationUpdate(angles, neigborhood, eta, dt, history, h):
+    if len(history) < h:
+        for i, neighbors in enumerate(neigborhood):
+            thetas = [angles[a] for _, a in enumerate(neighbors)]
+            avgSin = np.mean([np.sin(thetaK) for thetaK in thetas])
+            avgCos = np.mean([np.cos(thetaK) for thetaK in thetas])
+            avgTheta = np.arctan(avgSin/avgCos)
+            w = np.random.uniform(-1/2, 1/2)
+            angles[i] = avgTheta + eta*w*dt
+    else:
+        for i, neighbors in enumerate(neigborhood):
+            thetas = [history[0][a] for _, a in enumerate(neighbors)]
+            avgSin = np.mean([np.sin(thetaK) for thetaK in thetas])
+            avgCos = np.mean([np.cos(thetaK) for thetaK in thetas])
+            avgTheta = np.arctan(avgSin/avgCos)
+            w = np.random.uniform(-1/2, 1/2)
+            angles[i] = avgTheta + eta*w*dt
     return angles
 
 def UpdatePositions(positions, v, angle, size):
@@ -72,37 +82,11 @@ def UpdatePositions(positions, v, angle, size):
             positions[i, 1] += size
     return positions
 
-def UpdateParticles(positions, angles, rf, l, eta, dt, v):
+def UpdateParticles(positions, angles, rf, l, eta, dt, v, thetaHistory, h):
     neighbors = FindNeighbors(positions, rf, l)
-    angles = OrientationUpdate(angles, neighbors, eta, dt)
+    angles = OrientationUpdate(angles, neighbors, eta, dt, thetaHistory, h)
     positions = UpdatePositions(positions, v, angles, l)
     return positions, angles
-
-def VicsekModel(gen, v, size, mode='Load'):
-    alignmentData = []
-    clusteringData = []
-    startTime = time.time()
-    periodTime = time.time()
-
-    if mode == 'Load':
-        particles = [LoadData('Positions.csv'), LoadData('Angles.csv')]
-    else:
-        particles = InitializeParticles(l, n)
-        SaveData(particles[0], 'Positions.csv')
-        SaveData(particles[1], 'Angles.csv')
-
-    for i in range(gen):
-        particles = UpdateParticles(particles[0], particles[1], rf, size, eta, dt, v)
-        alignC, clusterC = FindCoefficients(particles[0], particles[1], rf)
-        alignmentData.append(alignC)
-        clusteringData.append(clusterC)
-
-        if i % 10 == 0:
-            print(f'Generation: {i}, Period time: {time.time() - periodTime: 4.0f} seconds')
-            periodTime = time.time()
-    print(f'Simulation time: {(time.time() - startTime)%60} minutes')
-
-    PlotFunctionB(LoadData('Positions.csv'), particles[0], [alignmentData, clusteringData])
 
 def FindCoefficients(positions, angles, rf):
     '''
@@ -128,7 +112,7 @@ def FindCoefficients(positions, angles, rf):
     clusterC = clusterCount/n
     return alignC, clusterC
 
-def PlotFunctionB(initialPositions, finalPositions, coefficients):
+def PlotFunction(initialPositions, finalPositions, coefficients):
     
     fig, axs = plt.subplots(1, 3)
 
@@ -179,20 +163,44 @@ def PlotFunctionB(initialPositions, finalPositions, coefficients):
 
     # Show the plot
     plt.show()
-    
 
-l = 100
-n = 1000
-v = 1
+def VicsekModel(gen, v, size, h, mode='Load'):
+    alignmentData = []
+    clusteringData = []
+    if h > 0:
+        thetaHistory = deque(maxlen=h)
+    else:
+        thetaHistory = []
+
+    if mode == 'Load':
+        particles = [LoadData('Positions.csv'), LoadData('Angles.csv')]
+    else:
+        particles = InitializeParticles(l, n)
+        SaveData(particles[0], 'Positions8.csv')
+        SaveData(particles[1], 'Angles8.csv')
+
+    for i in range(gen):
+        particles = UpdateParticles(particles[0], particles[1], rf, size, eta, dt, v, thetaHistory, h)
+        if h > 0:
+            thetaHistory.append(copy.deepcopy(particles[1]))
+        alignC, clusterC = FindCoefficients(particles[0], particles[1], rf)
+        alignmentData.append(alignC)
+        clusteringData.append(clusterC)
+
+        if i % 100 == 0:
+            print(f'Generation: {i}')
+
+    PlotFunction(LoadData('Positions8.csv'), particles[0], [alignmentData, clusteringData])
+
+
+# Variables:
+l = 10**3
+n = 100
+v = 3
 dt = 1
-eta = 0.1
-rf = 1
+eta = 0.2
+rf = 20
 gen = 10**4
+h = 8
 
-VicsekModel(2000, v, l, 'Create')
-
-
-
-
-
-
+VicsekModel(gen, v, l, h)
