@@ -22,22 +22,6 @@ def LoadData(filename):
             data.append(line)
     return np.array(data)
 
-def PlotFunctionA(data):
-
-    fig, ax = plt.subplots()
-
-    # Scatter plot of positions
-    positions = [[data[j][i] for j in range(len(data))] for i in range(len(data[0]))]
-    ax.scatter(positions[0], positions[1], s=10, color='b')
-
-    # Add voroni tesselation
-    vor = Voronoi(data)
-    voronoi_plot_2d(vor, line_colors='k', line_width=1, show_vertices=False, line_alpha=0.5, point_size=0, ax=ax)
-    ax.set_title('Initial positions')
-    ax.set_xlabel('X: L')
-    ax.set_ylabel('Y: L')
-    plt.show()
-
 def FindNeighbors(positions, rf, size):
     distances = [[] for _ in range(len(positions))]
     neighbors = [[] for _ in range(len(positions))]
@@ -94,22 +78,119 @@ def UpdateParticles(positions, angles, rf, l, eta, dt, v):
     return positions, angles
 
 def VicsekModel(gen, v, size, mode='Load'):
+    alignmentData = []
+    clusteringData = []
 
     if mode == 'Load':
         particles = [LoadData('Positions.csv'), LoadData('Angles.csv')]
     else:
         particles = InitializeParticles(l, n)
+        SaveData(particles[0], 'Positions.csv')
+        SaveData(particles[1], 'Angles.csv')
 
     for i in range(gen):
         particles = UpdateParticles(particles[0], particles[1], rf, size, eta, dt, v)
+        alignC, clusterC = FindCoefficients(particles[0], particles[1], rf)
+        alignmentData.append(alignC)
+        clusteringData.append(clusterC)
 
-        if i % 10 == 0:
+        if i % 100 == 0:
             print(f'Generation: {i}')
 
-    PlotFunctionA(particles[0])
+    PlotFunctionB(LoadData('Positions.csv'), particles[0], [alignmentData, clusteringData])
 
+def FindCoefficients(positions, angles, rf):
+    '''
+    Function to calculate alignment and clustering coefficients
 
+    Velocities calculated according to eqn. 8.3
+    Alignment coefficient calculated with eqn. 8.5
+    '''
+    n = len(positions)
+    vor = Voronoi(positions)
 
+    # Alignment coefficient
+    alignC = np.sum(np.cos(angles))/n
+
+    # Clustering coefficient
+    clusterCount = 0
+    for _, regionIdx in enumerate(vor.point_region):
+        region = vor.regions[regionIdx]
+        if not -1 in region and len(region) > 2:
+            area = 0.5 * np.abs(np.dot(vor.vertices[region, 0], np.roll(vor.vertices[region, 1], 1)) - np.dot(vor.vertices[region, 1], np.roll(vor.vertices[region, 0], 1)))
+            if area < np.pi*rf**2:
+                clusterCount += 1
+    clusterC = clusterCount/n
+    return alignC, clusterC
+
+def PlotFunctionA(data):
+
+    fig, ax = plt.subplots()
+
+    # Scatter plot of positions
+    positions = [[data[j][i] for j in range(len(data))] for i in range(len(data[0]))]
+    ax.scatter(positions[0], positions[1], s=10, color='b')
+
+    # Add voroni tesselation
+    vor = Voronoi(data)
+    voronoi_plot_2d(vor, line_colors='k', line_width=1, show_vertices=False, line_alpha=0.5, point_size=0, ax=ax)
+    ax.set_title('Initial positions')
+    ax.set_xlabel('X: L')
+    ax.set_ylabel('Y: L')
+    plt.show()
+
+def PlotFunctionB(initialPositions, finalPositions, coefficients):
+    
+    fig, axs = plt.subplots(1, 3)
+
+    # Plot the initial conditions
+    ax = axs[0]
+    data = initialPositions
+    # Scatter plot of positions
+    positions = [[data[j][i] for j in range(len(data))] for i in range(len(data[0]))]
+    ax.scatter(positions[0], positions[1], s=10, color='b')
+    # Add voroni tesselation
+    vor = Voronoi(data)
+    voronoi_plot_2d(vor, line_colors='k', line_width=1, show_vertices=False, line_alpha=0.5, point_size=0, ax=ax)
+    ax.set_title('Initial positions')
+    ax.set_xlabel('X: L')
+    ax.set_ylabel('Y: L')
+
+    # Plot the final conditions
+    ax = axs[1]
+    data = finalPositions
+    # Scatter plot of positions
+    positions = [[data[j][i] for j in range(len(data))] for i in range(len(data[0]))]
+    ax.scatter(positions[0], positions[1], s=10, color='b')
+    # Add voroni tesselation
+    vor = Voronoi(data)
+    voronoi_plot_2d(vor, line_colors='k', line_width=1, show_vertices=False, line_alpha=0.5, point_size=0, ax=ax)
+    ax.set_title('Initial positions')
+    ax.set_xlabel('X: L')
+    ax.set_ylabel('Y: L')
+
+    # Plot the coefficients
+    ax = axs[2]
+    alignmentData = coefficients[0]
+    clusteringData = coefficients[1]
+    x = np.linspace(0, len(alignmentData), num=len(alignmentData))
+    ax = axs[2]
+
+    # Plot alignment data
+    ax.plot(x, alignmentData, label='Alignment', color='r')
+    ax.set_title('Alignment and Clustering Coefficients')
+    ax.set_xlabel('Time Step')
+    ax.set_ylabel('Coefficient Value')
+
+    # Plot clustering data
+    ax.plot(x, clusteringData, label='Clustering', color='g')
+
+    # Add legend
+    ax.legend()
+
+    # Show the plot
+    plt.show()
+    
 
 l = 100
 n = 100
@@ -117,8 +198,13 @@ v = 1
 dt = 1
 eta = 0.01
 rf = 1
-gen = 10**2
+gen = 10**4
 
-VicsekModel(gen, v, l)
+VicsekModel(gen, v, l, 'Create')
+
+#particles = [LoadData('Positions.csv'), LoadData('Angles.csv')]
+
+
+
 
 
