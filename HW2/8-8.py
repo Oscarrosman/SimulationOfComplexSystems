@@ -54,6 +54,25 @@ def OrientationUpdate(angles, neigborhood, eta, dt, history, h):
             avgTheta = np.arctan(avgSin/avgCos)
             w = np.random.uniform(-1/2, 1/2)
             angles[i] = avgTheta + eta*w*dt
+    elif h < 0:
+        pass
+        for i, neighbors in enumerate(neigborhood):
+            # Single out particle history
+            thetas = [[history[i][k] for i in range(len(history))] for _, k in enumerate(neighbors)]
+            x = np.linspace(0, abs(h), num=abs(h))
+            print(len(x), len(thetas[0]))
+            # Determine trajectory
+            coefficients = [np.polyfit(x, tH, 1) for tH in thetas]
+            x1 = h+1
+            # Extrapolate
+            thetas1 = [np.polyval(c, x1) for c in coefficients]
+            # Average trajectories
+            avgSin = np.mean([np.sin(thetaK) for thetaK in thetas1])
+            avgCos = np.mean([np.cos(thetaK) for thetaK in thetas1])
+            avgTheta = np.arctan(avgSin/avgCos)
+            # Randomize W
+            w = np.random.uniform(-1/2, 1/2)
+            angles[i] = avgTheta + eta*w*dt
     else:
         for i, neighbors in enumerate(neigborhood):
             thetas = [history[0][a] for _, a in enumerate(neighbors)]
@@ -112,7 +131,6 @@ def FindCoefficients(positions, angles, rf):
     return alignC, clusterC
 
 def PlotFunction(initialPositions, finalPositions, coefficients):
-    print(finalPositions)
     
     fig, axs = plt.subplots(1, 3)
 
@@ -169,8 +187,8 @@ def VicsekModel(gen, v, size, h, mode='Load'):
     clusteringData = []
     startTime = time.time()
     periodTime = time.time()
-    if h > 0:
-        thetaHistory = deque(maxlen=h)
+    if h != 0:
+        thetaHistory = deque(maxlen=abs(h))
     else:
         thetaHistory = []
 
@@ -183,29 +201,29 @@ def VicsekModel(gen, v, size, h, mode='Load'):
 
     for i in range(gen):
         particles = UpdateParticles(particles[0], particles[1], rf, size, eta, dt, v, thetaHistory, h)
-        if h > 0:
+        if h != 0:
             thetaHistory.append(copy.deepcopy(particles[1]))
         alignC, clusterC = FindCoefficients(particles[0], particles[1], rf)
         alignmentData.append(alignC)
         clusteringData.append(clusterC)
 
-        if i % 500 == 0:
+        if i % 100 == 0:
             print(f'\nGeneration: {i} \n  > Periodtime: {time.time()-periodTime: 3.0f} seconds')
             periodTime = time.time()
     
-    print(f'\n Simulation time: {(time.time()-startTime)%60} minutes')
+    print(f'\n Simulation time: {(time.time()-startTime)%60:3.0f} minutes')
 
     PlotFunction(LoadData('Positions8.csv'), particles[0], [alignmentData, clusteringData])
 
 
 # Variables:
-l = 10**3
-n = 100
-v = 3
+l = 10**2
+n = 1000
+v = 1
 dt = 1
-eta = 0.2
-rf = 20
+eta = 0.01
+rf = 10
 gen = 10**4
-h = 2
+h = 0
 
-VicsekModel(gen, v, l, h)
+VicsekModel(gen, v, l, h, 'Create')
