@@ -3,36 +3,56 @@ import csv
 import matplotlib.pyplot as plt
 from scipy.spatial import Voronoi, voronoi_plot_2d
 
-def FindCoefficients1(positions, flocking_radius, velocity_orientations):
-    """
-    Calculate the alignment and clustering coefficients for a configuration.
+def PlotFunctionA(data):
 
-    Parameters:
-        positions (numpy.ndarray): Array of shape (N, 2) representing the positions of N particles.
-        flocking_radius (float): Flocking area radius.
-        velocity_orientations (numpy.ndarray): Array of shape (N,) representing the orientation of velocity for each particle.
+    fig, ax = plt.subplots()
 
-    Returns:
-        tuple: Alignment coefficient and clustering coefficient.
-    """
-    N = len(positions)
+    # Scatter plot of positions
+    positions = [[data[j][i] for j in range(len(data))] for i in range(len(data[0]))]
+    ax.scatter(positions[0], positions[1], s=10, color='b')
 
-    # Calculate Voronoi tessellation
-    vor = Voronoi(positions)
+    # Add voroni tesselation
+    vor = Voronoi(data)
+    voronoi_plot_2d(vor, line_colors='k', line_width=1, show_vertices=False, line_alpha=0.5, point_size=0, ax=ax)
+    ax.set_title('Initial positions')
+    ax.set_xlabel('X: L')
+    ax.set_ylabel('Y: L')
+    plt.show()
 
-    # Calculate alignment coefficient
-    alignment_sum = np.sum(np.cos(velocity_orientations))
-    alignment_coefficient = alignment_sum / N
 
-    # Calculate clustering coefficient
-    clustering_count = 0
-    for i, region_index in enumerate(vor.point_region):
-        region = vor.regions[region_index]
-        if not -1 in region and len(region) > 2:  # Ensure at least 3 vertices for a valid polygon
-            area = 0.5 * np.abs(np.dot(vor.vertices[region, 0], np.roll(vor.vertices[region, 1], 1)) - np.dot(vor.vertices[region, 1], np.roll(vor.vertices[region, 0], 1)))
-            if area < np.pi * flocking_radius**2:
-                clustering_count += 1
-
-    clustering_coefficient = clustering_count / N
-
-    return alignment_coefficient, clustering_coefficient
+def OrientationUpdate(angles, neigborhood, eta, dt, history, h):
+    if len(history) < h or h == 0:
+        for i, neighbors in enumerate(neigborhood):
+            thetas = [angles[a] for _, a in enumerate(neighbors)]
+            avgSin = np.mean([np.sin(thetaK) for thetaK in thetas])
+            avgCos = np.mean([np.cos(thetaK) for thetaK in thetas])
+            avgTheta = np.arctan(avgSin/avgCos)
+            w = np.random.uniform(-1/2, 1/2)
+            angles[i] = avgTheta + eta*w*dt
+    elif h < 0:
+        pass
+        for i, neighbors in enumerate(neigborhood):
+            # Single out particle history
+            thetas = [[history[i][k] for i in range(len(history))] for _, k in enumerate(neighbors)]
+            x = np.linspace(1, abs(h), num=abs(h))
+            # Determine trajectory
+            coefficients = [np.polyfit(x, tH, 1) for tH in thetas]
+            x1 = h+1
+            # Extrapolate
+            thetas1 = [np.polyval(c, x1) for c in coefficients]
+            # Average trajectories
+            avgSin = np.mean([np.sin(thetaK) for thetaK in thetas1])
+            avgCos = np.mean([np.cos(thetaK) for thetaK in thetas1])
+            avgTheta = np.arctan(avgSin/avgCos)
+            # Randomize W
+            w = np.random.uniform(-1/2, 1/2)
+            angles[i] = avgTheta + eta*w*dt
+    else:
+        for i, neighbors in enumerate(neigborhood):
+            thetas = [history[0][a] for _, a in enumerate(neighbors)]
+            avgSin = np.mean([np.sin(thetaK) for thetaK in thetas])
+            avgCos = np.mean([np.cos(thetaK) for thetaK in thetas])
+            avgTheta = np.arctan(avgSin/avgCos)
+            w = np.random.uniform(-1/2, 1/2)
+            angles[i] = avgTheta + eta*w*dt
+    return angles

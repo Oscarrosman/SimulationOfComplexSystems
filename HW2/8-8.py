@@ -218,12 +218,13 @@ def VicsekModel(gen, v, size, h, mode='Load'):
 
 # Variables:
 l = 10**2
-n = 1000
+n = 100
 v = 1
 dt = 1
 eta = 0.01
-rf = 10
+rf = 1
 gen = 10**4
+gen = 2000
 h = 0
 
 VicsekModel(gen, v, l, h, 'Create')
