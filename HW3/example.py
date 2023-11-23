@@ -11,6 +11,7 @@ def plot_degree_histogram(n, p, num_samples):
     degrees = []
     for _ in range(num_samples):
         degree_sequence = erdos_renyi_random_graph(n, p)
+        print(degree_sequence)
         degrees.extend(degree_sequence)
 
     plt.hist(degrees, bins=np.arange(0, n + 2) - 0.5, density=True, alpha=0.7)
