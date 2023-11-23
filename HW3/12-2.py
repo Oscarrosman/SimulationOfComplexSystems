@@ -48,9 +48,9 @@ def PlotFunction(nodes, adjacency):
 
 
 n = 20
-r = 3
-p = 0.1
-c = 4
+r = 1
+p = 0.15
+c = 8
 nodes = InitializeNodes(n, r)
 adj = InitializeAdjecencyMatrix(n, p, c)
 print(nodes[0][0])

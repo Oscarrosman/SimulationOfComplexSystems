@@ -35,6 +35,8 @@ def PlotFunction(nodes, adjacency, ax):
                 pairCoord.append([[x[i], x[j]], [y[i], y[j]]])
     for pair in pairCoord:
         ax.plot(pair[0], pair[1], linewidth=0.1, color='blue')
+    ax.set_xticks([]), ax.set_yticks([])
+    ax.set_xlabel(f'$n = {len(nodes)}$')
 
 
     ax.scatter(x, y, color='orange')
@@ -66,7 +68,7 @@ def MergePlots(nodes, prob, adjMatrix):
 
     plt.show()
 
-r = 3
+r = 1
 n = 300
 p = 0.05
 nodes, x, y = InitializeNodes(n, r)
