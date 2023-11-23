@@ -1,27 +1,40 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.stats import binom
 
-def erdos_renyi_random_graph(n, p):
-    adjacency_matrix = np.random.rand(n, n) < p
-    np.fill_diagonal(adjacency_matrix, 0)
-    return np.sum(adjacency_matrix, axis=1)
+def erdos_renyi_adjacency_matrix(n, p):
+    """
+    Generate an Erdős–Rényi random graph adjacency matrix.
+    """
+    return np.random.choice([0, 1], size=(n, n), p=[1-p, p])
 
-def plot_degree_histogram(n, p, num_samples):
-    degrees = []
-    for _ in range(num_samples):
-        degree_sequence = erdos_renyi_random_graph(n, p)
-        print(degree_sequence)
-        degrees.extend(degree_sequence)
+def compute_path_length_matrix(A):
+    """
+    Compute the path length matrix L for an Erdős–Rényi random graph.
+    """
+    n = A.shape[0]
+    L = np.full((n, n), -1)  # Initialize L with -1
 
-    plt.hist(degrees, bins=np.arange(0, n + 2) - 0.5, density=True, alpha=0.7)
-    plt.xlabel('Degree (k)')
-    plt.ylabel('Probability Density')
-    plt.title(f'Degree Histogram for Erdős–Rényi Random Graph (n={n}, p={p})')
-    plt.show()
+    t = 1
+    while np.any(L == -1):
+        At = np.linalg.matrix_power(A, t)
+        for i in range(n):
+            for j in range(n):
+                if A[i, j] != 0 and L[i, j] == L[j, i] == -1:
+                    L[i, j] = L[j, i] = t
+        t += 1
 
-# Example usage
-n_value = 20
-p_value_example = 0.2
-num_samples_example = 1000
-plot_degree_histogram(n_value, p_value_example, num_samples_example)
+    return L
+
+# Example usage:
+n = 5  # Number of nodes
+p = 0.3  # Probability of edge existence
+
+# Generate Erdős–Rényi random graph adjacency matrix
+A = erdos_renyi_adjacency_matrix(n, p)
+
+# Compute path length matrix
+L = compute_path_length_matrix(A)
+
+print("Erdős–Rényi Random Graph Adjacency Matrix:")
+print(A)
+print("\nPath Length Matrix:")
+print(L)
