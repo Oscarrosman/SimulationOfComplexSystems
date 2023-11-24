@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 from scipy.stats import binom
 
 def InitializeAdjecencyMatrix(n, p):
+    '''
+    The Erdős Rényi random graph
+    '''
     matrix = np.zeros([n,n], dtype=int)
     for i in range(n):
         for j in range(n):
@@ -52,6 +55,7 @@ def PlotHistogram(n, prob, adjMatrix, ax):
     distribution = [sum(node) for node in adjMatrix]
     
     ax.hist(distribution, bins=np.arange(0, n + 2) - 0.5, density=True, alpha=0.7, rwidth=0.8)
+    ax.set_ylim(0, 0.25)
     ax.set_xlabel('k')
     ax.set_ylabel('P(k)')
 
@@ -73,7 +77,6 @@ n = 300
 p = 0.05
 nodes, x, y = InitializeNodes(n, r)
 adj = InitializeAdjecencyMatrix(n, 0.05)
-#PlotHistogram(n, p, adj)
 MergePlots(nodes, p, adj)
 
 

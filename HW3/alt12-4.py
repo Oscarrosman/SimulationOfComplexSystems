@@ -17,36 +17,42 @@ def InitializeAdjacencyMatrix(n, p):
     return adjMatrix
 
 def LengthMatrix(adj):
-    # Initialize Matrix
     n = len(adj)
-    
     matrix = -1*np.ones([n, n], dtype=int)
-    np.fill_diagonal(matrix, 0)
-    at = adj
-    t = 0
-    while np.any(matrix == -1):
-        t += 1
-        at = np.linalg.matrix_power(adj, t)
+    comp = np.copy(matrix)
+    np.fill_diagonal(comp, 0)
+    t = 1
+    at = np.copy(adj)
+
+    while (np.any(comp == -1)):
         for i in range(n):
-            for j in range(n):
-                if at[i][j] != 0 and matrix[i][j] == -1:
+            for j in range(i, n):
+                if at[i][j] != 0 and matrix[i][j] == matrix[j][i] and matrix[i][j] == -1:
                     matrix[i][j] = t
                     matrix[j][i] = t
-        if t > 10:
-            print('Probability cancelled, t > 10')
-            matrix = 10*np.ones([n, n], dtype=int)
+        at = np.matmul(at, adj)
+        t += 1
+        comp = np.copy(matrix)
+        np.fill_diagonal(comp, 0)
+        if t > 100:
+            print('Break')
             break
 
-    np.fill_diagonal(matrix, -1)
     return matrix
 
-def AveragePathLength(n, nProb):
-    probabilities = np.linspace(0, 1, num=nProb)
+def AveragePathLength(n):
+    Avg = lambda m, n: np.sum(m)/(n*n - n) # Elements: n*n, -n to discount diagonal
+    probabilities = np.linspace(0, 1, num=100)
     avgSteps = []
     for p in probabilities:
+        print(f'\nNew probability: {p}')
+        at = time.time()
         adj = InitializeAdjacencyMatrix(n, p)
-        lenMatrix = LengthMatrix(adj)
-        avgSteps.append(np.mean(lenMatrix))
+        lengthMatrix = LengthMatrix(adj)
+        np.fill_diagonal(lengthMatrix, 0)
+        avg = Avg(lengthMatrix, n)
+        avgSteps.append(avg)
+        print(f' > avg length: {avgSteps[-1]}, time: {(time.time() - at)} seconds')
     return avgSteps, probabilities
 
 def CalcClusterCoefficient(adj):
@@ -86,7 +92,7 @@ def ClusteringCoefficient(n, nProb):
     return clusterC
 
 def PlotFunction(n, nProb):
-    steps, probabilities = AveragePathLength(n, nProb)
+    steps, probabilities = AveragePathLength(n)
     clusterC = ClusteringCoefficient(n, nProb)
 
     fig, axs = plt.subplots(1, 2, figsize=(10, 5))
@@ -126,4 +132,3 @@ nP = 100
 p = 0.1
 st = time.time()
 PlotFunction(n, nP)
-

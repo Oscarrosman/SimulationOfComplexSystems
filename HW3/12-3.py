@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def InitializeAdjacencyMatrix(n, n0, m):
+    '''
+    The Albert Barabási preferential-growth model
+    '''
     matrix = np.ones([n0, n0], dtype=int)
     np.fill_diagonal(matrix, 0)
     matrix = matrix.tolist()
@@ -68,7 +71,7 @@ def PlotFunction(nodes, adjacency):
     plt.show()
 
 
-n = 1000
+n = 100
 m = 3
 n0 = 5
 r = 1
