@@ -40,7 +40,7 @@ def Initialization(n):
 def GenerateTopology(points):
     n = len(points)
     # Define matrix
-    connectionMatrix = np.zeros([n, n], dtype=int)
+    connectionMatrix = np.zeros([n, n], dtype=float)
     # Find connections
     triangulation  = sp.Delaunay(points)
     # Reformat connections
@@ -71,6 +71,7 @@ def FindDistances(nodes, connections):
     # Ensure diagonal is filled with zeros
     np.fill_diagonal(distanceMatrix, 0)
     np.fill_diagonal(weights, 0)
+    print(distanceMatrix)
     return distanceMatrix, weights
 
 def TraveledDistance(path, distanceMatrix):
@@ -111,105 +112,109 @@ def SimplifyPath(path):
     simplifiedPath = visitedForward + visitedBackward
     return simplifiedPath
 
-def RunAlgorithm(n, nAnts, stop, start = -1, end=-1):
+def UpdatePheromone(pheromoneLevels, paths, travelDistance, end):
+    # Apply decay to all pheromone levels (1-p)*tao
+    for i in range(len(pheromoneLevels)):
+        for j in range(len(pheromoneLevels[0])):
+            pheromoneLevels[i][j] *= (1-decay)
+    # Calculate added pheromone
+    for i,path in enumerate(paths):
+        edges = []
+        if path[-1] == end:
+            delta = 1/travelDistance[i]
+            for j in range(len(path)-1):
+                edges.append([path[j], path[j+1]])
+            for j in range(len(edges)):
+                pheromoneLevels[edges[j][0]][edges[j][1]] += delta
+            
+    return pheromoneLevels
+
+def RunAlgorithm(nAnts, stop, start, end, nodeOptions, connections, weights, distanceMatrix, pheromoneLevels):
+    # Initialize ants
+    antPaths = [[start] for i in range(nAnts)]
+    travelDistance = [10**3 for i in range(nAnts)]
+
+    # Generate paths
+    for step in range(stop):
+        for ant in range(nAnts):
+            if antPaths[ant][-1] != end:
+                antPaths[ant].append(TakeStep(nodeOptions, connections, antPaths[ant][-1], weights, pheromoneLevels))
+    
+    # Calculate distance of finished paths
+    for ant in range(nAnts):
+        if antPaths[ant][-1] == end:
+            antPaths[ant] = SimplifyPath(antPaths[ant])
+            travelDistance[ant] = TraveledDistance(antPaths[ant], distanceMatrix)
+
+    # Update pheromone levels
+    pheromoneLevels = UpdatePheromone(pheromoneLevels, antPaths, travelDistance, end)
+
+    return pheromoneLevels, antPaths, travelDistance
+
+def PlotPath(path, connections, nodes, start, end):
+    # Seperate coordinates:
+    x = [node[0] for node in nodes]
+    y = [node[1] for node in nodes]
+    plt.plot([x[start], x[end]], [y[start], y[end]], '--',color='green')
+    # Plot connections
+    pairs = []
+    pairCoord = []
+    for i, connections in enumerate(connections):
+        for j, connection in enumerate(connections):
+            if connection == 1:
+                pairs.append([i, j])
+                pairCoord.append([[x[i], x[j]], [y[i], y[j]]])
+    for pair in pairCoord:
+        plt.plot(pair[0], pair[1], linewidth=0.1, color='black')
+
+    # Plot path
+    xPath = [x[edge] for edge in path]
+    yPath = [y[edge] for edge in path]
+    plt.plot(xPath, yPath, linewidth=1, color='red')
+
+    # Plot nodes
+    plt.scatter(x, y, color='black')
+    plt.scatter([x[start], x[end]], [y[start], y[end]], color='green')
+    plt.title('Shorest path')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.show()
+
+def Main(rounds, n, nAnts, stop, start=-1, end=-1):
     # Initialize grid
     nodes, connections = Initialization(n)
     pheromoneLevels = np.copy(connections)
     nodeOptions = np.linspace(0, n-1, num=n, dtype=int)
     dMatrix, weights = FindDistances(nodes, connections)
+
+    # Set start and end points:
     if start == -1:
         startPoint = np.random.randint(0, n-1)
     else:
         startPoint = start
     if end == -1:
         endPoint = np.random.randint(0, n-1)
+        # Ensure they are not the same point
+        while endPoint == startPoint:
+            endPoint = np.random.randint(0, n-1)
     else:
         endPoint = end
 
-
-    # Initialize ants
-    antPaths = [[startPoint] for i in range(nAnts)]
-    travelDistance = [0 for i in range(nAnts)]
-
-    # Generate paths
-    for step in range(stop):
-        for ant in range(nAnts):
-            if antPaths[ant][-1] != endPoint:
-                antPaths[ant].append(TakeStep(nodeOptions, connections, antPaths[ant][-1], weights, pheromoneLevels))
+    # Data save:
+    sPath = []
+    for i in range(rounds):
+        pheromoneLevels, paths, tDistance = RunAlgorithm(nAnts, stop, startPoint, endPoint, nodeOptions, connections, weights, dMatrix, pheromoneLevels)
+        sPath.append(np.min(tDistance))
     
-    # Calculate distance of finished paths
-    for ant in range(nAnts):
-        if antPaths[ant][-1] == endPoint:
-            antPaths[ant] = SimplifyPath(antPaths[ant])
-            travelDistance[ant] = TraveledDistance(antPaths[ant], dMatrix)
-
-    PlotPaths(antPaths, nodes, connections, startPoint, endPoint)
-    # Simply path before distance calculation, done but can be improved
-    # Update pheromone levels
-
-def PlotPath(paths, nodes, connections, start, end):
-    # Check how many paths reached the end:
-    counter = 0
-    completedPaths = []
-    for i,path in enumerate(paths):
-        if path[-1] == end:
-            counter += 1
-            completedPaths.append(i)
-
-    figure, axs = plt.subplots(1, counter)
-    for i in range(len(completedPaths)):
-        pass
-
-
-def PlotPaths(paths, nodes, connections, start, end):
-    # Check how many paths reached the end:
-    counter = 0
-    completedPaths = []
-    for i,path in enumerate(paths):
-        if path[-1] == end:
-            counter += 1
-            completedPaths.append(i)
-
-    figure, axs = plt.subplots(1, counter)
-    x = [node[0] for node in nodes]
-    y = [node[1] for node in nodes]
-
-    for k, ax in enumerate(axs):
-        # Find and plot ALL connections
-        pairs = []
-        pairCoord = []
-        for i, connections in enumerate(connections):
-            for j, connection in enumerate(connections):
-                if connection == 1:
-                    pairs.append([i, j])
-                    pairCoord.append([[x[i], x[j]], [y[i], y[j]]])
-        for pair in pairCoord:
-            ax.plot(pair[0], pair[1], linewidth=0.1, color='blue')
-    
-        # Plot path:
-        print(completedPaths)
-        print(len(paths), k)
-        path = paths[completedPaths[k]]
-        print(path)
-        xPath = [x[edge] for edge in path]
-        yPath = [y[edge] for edge in path]
-        ax.plot(xPath, yPath, linewidth=1, color='red')
-
-        # Add nodes
-        ax.scatter(x, y, color='black')
-        # Highlight start and end nodes
-        ax.scatter([x[start], x[end]], [y[start], y[end]], color='green')
-        plt.show()
+    print(sPath)
+    r = np.linspace(0, rounds, num=rounds)
+    plt.plot(r, sPath)
     plt.show()
-
-
-
-
-
-
+        
 # Variables
 mode1 = 'Load' # 'Load
 alpha = 0.8
 beta = 1
+decay = 0.5
 
-RunAlgorithm(40, 5, 100)
+Main(100, 10, 5, 100)
