@@ -25,7 +25,8 @@ def LoadData(filename):
 
 def Initialization(n):
     if mode == 'Create':
-        nodes = np.random.rand(n, 2)
+        nodes = 10*np.random.uniform(0, 1, size=(n, 2))
+        #nodes = np.random.rand(n, 2)
         connections = GenerateTopology(nodes)
         # Save data
         SaveData(nodes, 'nodes.csv')
@@ -147,7 +148,7 @@ def PlotLength(r, sPathLength, mPathLength):
     plt.xlabel('Rounds')
     plt.ylabel('Length')
     plt.subplot(1, 2, 2)
-    plt.title('Mean path length')
+    plt.title(f'Mean path length, n = {n}')
     plt.plot(rs, mPathLength, color='red')
     plt.xlabel('Rounds')
     plt.ylabel('Length')
@@ -192,7 +193,7 @@ def PlotPheromone(nodes, connections, pMatrix, step):
                 if step == 0:
                     linewidth = 2.5*pLevel
                 else:
-                    linewidth = 0.2*pLevel
+                    linewidth = 2*pLevel
                 plt.plot([x[i], x[j]], [y[i], y[j]], color=color, linewidth=linewidth)
 
     ## Plot all nodes and connections ##
@@ -221,8 +222,8 @@ def RunAlgorithm(r, s, nAnts, n, savePoints):
     # Set start and stop points:
     start = np.random.randint(0, n-1)
     end = np.random.randint(0, n-1)
-    start = 8
-    end = 31
+    start = 29
+    end = 26
     while start == end:
         end = np.random.randint(0, n-1)
     print(f'\n Start point: {start}\n End point: {end}')
@@ -275,10 +276,11 @@ mode = 'Load'
 alpha = 0.8
 beta = 1
 decay = 0.5
-R = 300
-S = 80
+R = 301
+S = 120
 nA = 20
 Q = 1
+n = 60
 
 
-RunAlgorithm(R, S, nA, 40, [0, 15, 50])
+RunAlgorithm(R, S, nA, n, [0, 15, 50, 300])

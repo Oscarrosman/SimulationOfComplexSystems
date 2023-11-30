@@ -1,54 +1,104 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial import Delaunay
-import networkx as nx
-import csv
 
-# Generate random points
-#np.random.seed(42)
-N = 40
-points = np.random.rand(N, 2)
+def Initialization(n, noise):
+    # Create perfect grid
+    x = np.linspace(0,1, num=n)
+    y = np.linspace(0,1, num=n)
+    nodes = [[i, j] for i in x for j in y]
 
-# Perform Delaunay triangulation
-triangulation = Delaunay(points)
+    # Introduce noise
+    for i in range(n**2):
+        nodes[i][0] += noise*np.random.uniform(-1, 1)
+        nodes[i][1] += noise*np.random.uniform(-1, 1)
 
-# Create a graph from the Delaunay triangulation
-graph = nx.Graph()
+    # Create connections
+    # Initialize connections to form squares
+    connections = np.zeros(shape=(n**2, n**2))
+    for i in range(len(connections)):
+        if i % n == 0:
+            # Left side
+            if i // n == 0:
+                # Top
+                connections[i][i+1] = 1 # Right
+                connections[i][i+n] = 1 # Below
+            elif i // n == (n-1):
+                # bottom
+                connections[i][i+1] = 1 # Right
+                connections[i][i-n] = 1 # Above
+            else:
+                # Middle
+                connections[i][i+1] = 1 # Right
+                connections[i][i+n] = 1 # Below
+                connections[i][i-n] = 1 # Above
+            
+        elif i % n == (n-1):
+            # Right side
+            if i // n == 0:
+                # Top
+                connections[i][i-1] = 1 # Left
+                connections[i][i+n] = 1 # Below
+            elif i // n == (n-1):
+                # bottom
+                connections[i][i-1] = 1 # Left
+                connections[i][i-n] = 1 # Above
+            else:
+                # Middle
+                connections[i][i-1] = 1 # Left
+                connections[i][i+n] = 1 # Below
+                connections[i][i-n] = 1 # Above
+        else:
+            # Internally
+            if i // n == 0:
+                # Top
+                connections[i][i+1] = 1 # Right
+                connections[i][i-1] = 1 # Left
+                connections[i][i+n] = 1 # Below
+            elif i // n == (n-1):
+                # bottom
+                connections[i][i+1] = 1 # Right
+                connections[i][i-1] = 1 # Left
+                connections[i][i-n] = 1 # Above
+            else:
+                # Middle
+                connections[i][i+1] = 1 # Right
+                connections[i][i-1] = 1 # Left
+                connections[i][i-n] = 1 # Above
+                connections[i][i+n] = 1 # Below
+    np.fill_diagonal(connections, 0)
+    return nodes, connections
 
-# Add nodes and edges to the graph
-for simplex in triangulation.simplices:
-    graph.add_edge(simplex[0], simplex[1])
-    graph.add_edge(simplex[1], simplex[2])
-    graph.add_edge(simplex[2], simplex[0])
 
-# Draw the graph
-pos = {i: points[i] for i in range(N)}
-nx.draw_networkx(graph, pos, with_labels=True, font_weight='bold', node_size=200, node_color='skyblue', font_color='black', font_size=8)
-plt.title('Graph with Delaunay Triangulation Topology')
-plt.show()
-
-
-def plot_ant_colony(nodes, connections, pheromones):
-    """
-    Plot the ant colony graph with varying line thickness based on pheromone levels.
-
-    Parameters:
-    - nodes: List of node coordinates (e.g., [(x1, y1), (x2, y2), ...])
-    - connections: Adjacency matrix indicating connections between nodes (1 if connected, 0 otherwise)
-    - pheromones: Matrix representing pheromone levels on each edge
-
-    Note: Assumes len(nodes) == len(pheromones) == len(connections)
-    """
-    # Separate coordinates
+def PlotFunction(nodes):
     x = [node[0] for node in nodes]
     y = [node[1] for node in nodes]
 
-    # Plot connections
-    for i in range(len(nodes)):
-        for j in range(i + 1, len(nodes)):
-            if connections[i][j] == 1:
-                pheromone_level = pheromones[i][j]
-                color = 'black' if pheromone_level == 0 else 'orange'
-                linewidth = 1 + 5 * pheromone_level  # Adjust the multiplier as needed
+    plt.scatter(x, y)
+    plt.show()
 
-                plt.plot([x[i], x[j]], [y[i], y[j]], color=color, linewidth=linewidth)
+def PlotFunction1(nodes, adjacency):
+    # Seperate coordinates
+    x = [node[0] for node in nodes]
+    y = [node[1] for node in nodes]
+
+    # Find connections
+    pairs = []
+    pairCoord = []
+    for i, connections in enumerate(adjacency):
+        for j, connection in enumerate(connections):
+            if connection == 1:
+                pairs.append([i, j])
+                pairCoord.append([[x[i], x[j]], [y[i], y[j]]])
+
+    counter = 1
+    for pair in pairCoord:
+        print(counter)
+        counter += 1
+        plt.plot(pair[0], pair[1], linewidth=0.1, color='blue')
+
+    plt.xticks([]), plt.yticks([])
+    plt.scatter(x, y, color='orange')
+    plt.show()
+
+nod, con = Initialization(10, 0.025)
+PlotFunction1(nod, con)
