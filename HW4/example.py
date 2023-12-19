@@ -65,6 +65,7 @@ def Initialization(n, noise):
                 connections[i][i-1] = 1 # Left
                 connections[i][i-n] = 1 # Above
                 connections[i][i+n] = 1 # Below
+                
     np.fill_diagonal(connections, 0)
     return nodes, connections
 
